@@ -1,0 +1,223 @@
+---
+title: "Segmentación de Clientes Bancarios mediante Técnicas de Análisis Multivariado"
+subtitle: "BD-165 · Modelos Estadísticos Avanzados · Colegio Universitario de Cartago"
+author: "Grupo 8: Mariana Méndez Pérez, Luis Diego Montero Vargas, Josué Redondo Gómez, Claret Rodríguez Jiménez, Nadin Rojas López"
+date: "`r format(Sys.Date(), '%d de %B de %Y')`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    number_sections: true
+  pdf_document:
+    toc: true
+    number_sections: true
+    fig_caption: true
+lang: es
+---
+
+```{r setup, include=FALSE}
+# Esta opcion hace que el codigo Y sus resultados aparezcan en el documento.
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+<!--
+
+-->
+
+# Introducción
+
+Los bancos manejan grandes volúmenes de información sobre sus clientes, pero identificar patrones de comportamiento dentro de esa información no siempre es sencillo a simple vista. Este proyecto aplica técnicas de análisis multivariado para descubrir si existen grupos naturales de clientes según su perfil financiero y demográfico, sin partir de ninguna categoría predefinida.
+
+**Pregunta de análisis:** ¿Existen grupos naturales de clientes según su perfil financiero (puntaje crediticio, edad, antigüedad, balance, número de productos, salario), y esos grupos tienen relación con que el cliente abandone el banco o no?
+
+El objetivo es doble: primero, identificar y caracterizar esos perfiles de cliente mediante técnicas de agrupamiento; segundo, validar si los grupos encontrados de forma no supervisada (sin usar la variable de fuga) coinciden con patrones reales de abandono, lo cual tendría valor práctico para el banco a la hora de diseñar estrategias de retención.
+
+# Descripción de la base de datos
+
+- **Fuente:** [Bank Customer Churn Dataset](https://www.kaggle.com/datasets/shrutimechlearn/churn-modelling), disponible públicamente en Kaggle.
+- **Tamaño original:** 10,000 observaciones (clientes), 14 variables.
+
+Las variables originales son: `RowNumber`, `CustomerId`, `Surname` (identificadores, sin valor analítico), `CreditScore` (puntaje crediticio), `Geography` (país), `Gender`, `Age`, `Tenure` (años como cliente del banco), `Balance` (saldo en cuenta), `NumOfProducts` (productos bancarios contratados), `HasCrCard`, `IsActiveMember`, `EstimatedSalary` y `Exited` (si el cliente abandonó el banco; no se usa para el agrupamiento, se reserva para la validación final).
+
+## Preparación del entorno
+
+```{r paquetes}
+# install.packages(c("tidyverse", "cluster", "factoextra", "GGally"))
+library(tidyverse)
+library(cluster)     # pam()
+library(factoextra)  # fviz_cluster(), fviz_nbclust()
+library(GGally)       # ggpairs()
+```
+
+```{r cargar-datos}
+datos <- read.csv("../data/Churn_Modelling.csv")
+
+str(datos)
+dim(datos)
+```
+
+## Contexto demográfico
+
+```{r contexto-demografico}
+round(prop.table(table(datos$Geography)) * 100, 1)
+round(prop.table(table(datos$Gender)) * 100, 1)
+round(prop.table(table(datos$HasCrCard)) * 100, 1)
+round(prop.table(table(datos$IsActiveMember)) * 100, 1)
+round(prop.table(table(datos$Exited)) * 100, 1)
+```
+
+De los 10,000 clientes, la mitad son de Francia (50.1%), y el resto se reparte entre Alemania (25.1%) y España (24.8%). Hay un poco más de hombres que de mujeres (54.6% vs 45.4%). El 70.6% tiene tarjeta de crédito y el 51.5% son miembros activos. De todos los clientes, el 20.4% se fue del banco (`Exited`).
+
+# Exploración y preparación de los datos
+
+## Calidad de los datos
+
+```{r calidad-datos}
+sum(duplicated(datos))    
+colSums(is.na(datos))     
+```
+
+No se encontraron filas duplicadas ni valores faltantes en ninguna columna, así que no hubo que imputar nada.
+
+## Limpieza
+
+```{r limpieza}
+# RowNumber, CustomerId y Surname son identificadores que no describen
+# el comportamiento del cliente 
+datos_limpios <- datos %>%
+  select(-RowNumber, -CustomerId, -Surname)
+
+str(datos_limpios)
+```
+
+## Distribuciones y valores atípicos
+
+```{r distribuciones, fig.width=6, fig.height=4}
+hist(datos_limpios$Age, main = "Distribución de edad",
+     xlab = "Edad", col = "#1F497D")
+
+hist(datos_limpios$Balance, main = "Distribución de balance de cuenta",
+     xlab = "Balance", col = "#C55A11")
+
+hist(datos_limpios$CreditScore, main = "Distribución de puntaje crediticio",
+     xlab = "CreditScore", col = "#38761D")
+
+hist(datos_limpios$EstimatedSalary, main = "Distribución de salario estimado",
+     xlab = "Salario estimado", col = "#7F6000")
+
+boxplot(datos_limpios[, c("CreditScore", "Age", "Tenure")],
+        main = "Boxplots de variables (escala original)")
+```
+
+```{r balance-cero}
+mean(datos_limpios$Balance == 0)
+```
+
+Algo que llama la atención es que el 36.17% de los clientes tiene el balance de cuenta en cero. Por eso el histograma de Balance se ve con dos picos: un montón de clientes en cero, y el resto repartido en valores más altos.
+
+```{r outliers-iqr}
+detectar_outliers <- function(x) {
+  q1 <- quantile(x, 0.25)
+  q3 <- quantile(x, 0.75)
+  iqr <- q3 - q1
+  limite_inf <- q1 - 1.5 * iqr
+  limite_sup <- q3 + 1.5 * iqr
+  sum(x < limite_inf | x > limite_sup)
+}
+
+vars_numericas <- datos_limpios %>%
+  select(CreditScore, Age, Tenure, Balance, NumOfProducts, EstimatedSalary)
+
+sapply(vars_numericas, detectar_outliers)
+```
+
+Con la regla del IQR salieron 359 valores atípicos en `Age` (como un 3.6% del total) y 60 en `NumOfProducts`. Esto es importante porque justifica usar PAM además de k-means más adelante: PAM aguanta mejor los valores extremos que k-means.
+
+## Selección de variables para el análisis
+
+Se seleccionaron seis variables numéricas de comportamiento financiero y demográfico: `CreditScore`, `Age`, `Tenure`, `Balance`, `NumOfProducts` y `EstimatedSalary`. Se excluyeron las variables categóricas y la variable `Exited`, que se reserva exclusivamente para la validación posterior, de modo que el agrupamiento se mantenga no supervisado.
+
+```{r seleccion-variables}
+vars_cluster <- datos_limpios %>%
+  select(CreditScore, Age, Tenure, Balance, NumOfProducts, EstimatedSalary)
+
+exited <- datos_limpios$Exited
+```
+
+## Correlación entre variables
+
+```{r correlacion}
+matriz_cor <- cor(vars_cluster)
+round(matriz_cor, 2)
+```
+
+```{r ggpairs, fig.width=8, fig.height=8}
+ggpairs(vars_cluster)
+```
+
+Casi todas las correlaciones son bajas. La única un poco más marcada es entre `Balance` y `NumOfProducts` (r = -0.30). Como no hay correlaciones fuertes, no hizo falta quitar ninguna variable por estar repitiendo información.
+
+## Escalado
+
+```{r escalado}
+datos_esc <- scale(vars_cluster)
+
+round(colMeans(datos_esc), 2)
+round(apply(datos_esc, 2, sd), 2)
+```
+
+Como las variables están en escalas muy distintas (por ejemplo `Balance` llega a valores de miles, mientras `Tenure` va de 0 a 10), hay que escalarlas antes de calcular distancias, igual que se hizo en clase con `clima_estaciones.csv`. Después de escalar, todas quedan con media 0 y desviación 1, como se confirma abajo.
+
+---
+
+# Modelos aplicados
+
+## K-means
+
+```{r codo, fig.width=6, fig.height=4}
+set.seed(123)
+fviz_nbclust(datos_esc, kmeans, method = "wss", k.max = 10) +
+  labs(title = "Método del codo para elegir k")
+```
+
+```{r kmeans}
+
+```
+
+*(falta)*
+
+## K-medoids (PAM)
+
+```{r pam}
+
+```
+
+*(falta)*
+
+## Escalamiento multidimensional (MDS)
+
+```{r mds}
+
+```
+
+*(falta)*
+
+# Resultados
+
+*(falta)*
+
+```{r resultados-placeholder}
+
+```
+
+# Discusión
+
+*(falta)*
+
+```{r validacion-exited}
+
+```
+
+# Conclusiones
+
+*(falta)*
