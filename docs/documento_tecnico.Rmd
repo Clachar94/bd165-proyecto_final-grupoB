@@ -174,17 +174,58 @@ Como las variables están en escalas muy distintas (por ejemplo `Balance` llega 
 
 ## K-means
 
+
+
 ```{r codo, fig.width=6, fig.height=4}
 set.seed(123)
 fviz_nbclust(datos_esc, kmeans, method = "wss", k.max = 10) +
   labs(title = "Método del codo para elegir k")
 ```
 
-```{r kmeans}
 
+Se agruparon los 10,000 clientes en 3 grupos según su comportamiento financiero (puntaje crediticio, edad, antigüedad, balance, productos, salario), usando K-means. El modelo no sabe nada de si el cliente se fue del banco o no — solo mira los números y encuentra grupos parecidos entre sí.
+
+**Los 3 grupos que salieron:**
+
+| Grupo | Cuántos clientes | Cómo son |
+|-------|-------------------|----------|
+| 1 | 3,196 | Clientes antiguos (7.6 años en promedio), con buen balance en cuenta, pero pocos productos contratados |
+| 2 | 3,559 | Clientes con balance casi en cero, pero son los que más productos tienen contratados |
+| 3 | 3,245 | Clientes nuevos (2.3 años en promedio), también con buen balance, pero pocos productos |
+
+```{r kmeans}
+set.seed(123)
+modelo_km <- kmeans(datos_esc, centers = 3, nstart = 25)
+modelo_km
+
+# Asignación de cada cliente a su grupo
+table(modelo_km$cluster)
+
+# Perfil de cada grupo (en las variables originales, sin escalar)
+datos_kmeans <- vars_cluster
+datos_kmeans$Grupo <- factor(modelo_km$cluster)
+
+aggregate(. ~ Grupo, data = datos_kmeans, FUN = mean)
+
+# Visualización
+fviz_cluster(modelo_km,
+             data = datos_esc,
+             palette = c("#1F497D", "#C55A11", "#38761D"),
+             ellipse.type = "convex",
+             ggtheme = theme_minimal(),
+             main = "Agrupamiento K-means — Clientes Bancarios")
 ```
 
-*(falta)*
+**Observaciones**
+
+El K-means encontró tres perfiles de cliente que se diferencian principalmente por **cuánto dinero tienen guardado** y **qué tan viejos son como clientes del banco**:
+
+- **Grupo 1 (azul):** clientes leales de toda la vida — llevan años con el banco y tienen buen saldo, pero pocos productos contratados.
+- **Grupo 2 (naranja):** clientes con la cuenta casi vacía, pero son los que más productos tienen contratados con el banco.
+- **Grupo 3 (verde):** clientes nuevos — llevan poco tiempo, pero ya llegaron con buen saldo, aunque igual que el Grupo 1 tienen pocos productos.
+
+Esto es útil porque el banco podría tratar diferente a un cliente nuevo con plata (Grupo 3) que a uno que ya lleva años (Grupo 1) — antes todos se veían igual, y ahora se pueden separar en estos tres perfiles.
+
 
 ## K-medoids (PAM)
 
