@@ -188,11 +188,37 @@ fviz_nbclust(datos_esc, kmeans, method = "wss", k.max = 10) +
 
 ## K-medoids (PAM)
 
+A diferencia de K-means, PAM (Partitioning Around Medoids) elige como centro
+de cada grupo a un cliente real de la base de datos, no un promedio matemático.
+Esto lo hace más robusto frente a los valores atípicos identificados en `Age` y
+`NumOfProducts`, donde el IQR detectó 359 y 60 casos extremos respectivamente.
+Para la realización se empleó k = 3, el cual es el número de grupos elegido con el método del codo.
+
 ```{r pam}
+
+set.seed(123)
+pam_fit <- pam(datos_esc, k = 3)
+
+# Clientes elegidos como medioides (representantes reales de cada grupo)
+pam_fit$medoids
+
+# Asignación de cada cliente a su grupo
+table(pam_fit$clustering)
+
+# Visualización de los grupos
+fviz_cluster(pam_fit,
+             data      = datos_esc,
+             ellipse.type = "convex",
+             main      = "Agrupamiento K-medoids (PAM) — Clientes Bancarios",
+             ggtheme   = theme_minimal())
 
 ```
 
-*(falta)*
+Lo que se observa:
+
+Cluster 1 (rojo): El más grande y disperso, ubicado hacia la izquierda. Agrupa la mayoría de clientes y tiene alta variabilidad interna, lo que sugiere perfiles más heterogéneos.
+Cluster 2 (verde): Posicionado al centro. Hay traslape considerable con el rojo, lo que indica que estos clientes comparten características con ambos grupos vecinos.
+Cluster 3 (azul): Se desplaza claramente hacia la derecha en Dim1, lo que sugiere que este grupo se distingue de los demás principalmente en las variables que más peso tienen en esa dimensión.
 
 ## Escalamiento multidimensional (MDS)
 
