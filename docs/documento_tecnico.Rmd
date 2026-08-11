@@ -270,7 +270,7 @@ la mejor manera posible esas distancias originales, permitiendo un mapa interpre
 
 ```{r}
 
-datos_mds <- read.csv(file.choose()) #Se crea esto para poder llamar los datos_esc ya que estan en formato lista
+datos_mds <- as.data.frame(datos_esc) #Se crea esto para poder llamar los datos_esc ya que estan en formato lista
 
 ```
 

@@ -2181,7 +2181,7 @@ descrita por variables numericas ya estandarizadas.Cmdscale() toma una
 matriz de distancias euclidianas y produce una configuracion en pocas
 dimensiones, para mantener de la mejor manera posible esas distancias
 originales, permitiendo un mapa interpretable.</p>
-<pre class="r"><code>datos_mds &lt;- read.csv(file.choose()) #Se crea esto para poder llamar los datos_esc ya que estan en formato lista</code></pre>
+<pre class="r"><code>datos_mds &lt;- as.data.frame(datos_esc) #Se crea esto para poder llamar los datos_esc ya que estan en formato lista</code></pre>
 <pre class="r"><code>datos_mds$Exited    &lt;- datos$Exited
 datos_mds$Geography &lt;- datos$Geography
 datos_mds$Gender    &lt;- datos$Gender</code></pre>
