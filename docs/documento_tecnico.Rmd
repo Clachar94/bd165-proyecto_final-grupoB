@@ -222,9 +222,95 @@ Cluster 3 (azul): Se desplaza claramente hacia la derecha en Dim1, lo que sugier
 
 ## Escalamiento multidimensional (MDS)
 
-```{r mds}
+## Escalamiento multidimensional (MDS)
+
+Se opto por utilizar MDS ya que el objetivo no es clasificar ni predecir, sino EXPLORAR Y VISUALIZAR la estructura de similitud/disimilitud entre clientes (o entre segmentos de clientes) descrita por variables numericas ya estandarizadas.Cmdscale() toma una matriz de distancias euclidianas y produce una configuracion en pocas dimensiones, para mantener de
+la mejor manera posible esas distancias originales, permitiendo un mapa interpretable.
+
+```{r}
+
+datos_mds <- read.csv(file.choose()) #Se crea esto para poder llamar los datos_esc ya que estan en formato lista
 
 ```
+
+```{r mds}
+datos_mds$Exited    <- datos$Exited
+datos_mds$Geography <- datos$Geography
+datos_mds$Gender    <- datos$Gender
+```
+
+
+```{r}
+vars <- c("CreditScore","Age","Tenure","Balance","NumOfProducts","EstimatedSalary")
+```
+
+Agrupamos por segmento (equivalente a "una fila por estacion)
+
+```{r}
+
+segmentos <- aggregate(datos_mds[, vars],
+                       by = list(Geography = datos_mds$Geography,
+                                 Gender    = datos_mds$Gender,
+                                 Exited    = datos_mds$Exited),
+                       FUN = mean)
+```
+Etiqueta legible para cada segmento (país, género y si se fue o no)
+
+```{r}
+segmentos$label <- paste0(
+  segmentos$Geography, " - ",
+  ifelse(segmentos$Gender == "Male", "Hombres", "Mujeres"), " - ",
+  ifelse(segmentos$Exited == 1, "Fuga", "No fuga")
+)
+rownames(segmentos) <- segmentos$label
+```
+
+Matriz de distancias, aquilos numero pequeño = segmentos parecidos, numero grande = muy distintos
+
+
+```{r}
+d <- dist(segmentos[, vars])
+
+d 
+```
+
+MDS 
+
+```{r}
+mds <- cmdscale(d, k = 2)
+mds
+```
+Vector de color: por Exited (0 = no fuga, 1 = fuga)
+
+```{r}
+colores <- ifelse(segmentos$Exited == 1, "pink", "blue")
+```
+
+Gráfica del mapa de segmentos de clientes
+
+```{r}
+plot(mds[,1],
+     mds[,2],
+     type = "n",
+     xlab = "Dimensión 1",
+     ylab = "Dimensión 2",
+     main = "Mapa MDS de segmentos de clientes")
+
+text(mds[,1],
+     mds[,2],
+     labels = rownames(segmentos),
+     col = colores,
+     cex = 0.8)
+
+```
+
+El mapa MDS revela una estructura de dos ejes claramente diferenciados. La Dimensión 2 separa consistentemente a los segmentos que se fugaron de los que permanecieron: todos los segmentos "Fuga" se ubican en la mitad superior del plano y todos los "No fuga" en la mitad inferior, sin traslape entre ambos grupos. Esto confirma que el perfil promedio de un cliente que abandona el banco es sistemáticamente distinto al de uno que se queda, en términos de las variables analizadas (CreditScore, Age, Tenure, Balance, NumOfProducts, EstimatedSalary).
+
+Por su parte, la Dimensión 1 refleja principalmente diferencias geográficas: los clientes de Germany quedan aislados del resto (France y Spain), independientemente de si se fugaron o no, lo que indica que el país de origen también aporta una fuente importante de variabilidad al perfil del cliente, probablemente ligada al balance de cuenta, que tiende a ser considerablemente más alto en Germany dentro de este dataset.
+
+En conjunto, el MDS sugiere que la fuga de clientes no es un fenómeno aislado de un único país, sino un patrón que se repite de forma similar dentro de cada geografía (cada país tiene su propio "par" fuga/no-fuga separado verticalmente), y que Geography actúa como un segundo factor relevante de diferenciación entre clientes, independiente de la fuga.
+
+
 
 *(falta)*
 
