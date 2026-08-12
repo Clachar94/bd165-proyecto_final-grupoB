@@ -263,8 +263,6 @@ Cluster 3 (azul): Se desplaza claramente hacia la derecha en Dim1, lo que sugier
 
 ## Escalamiento multidimensional (MDS)
 
-## Escalamiento multidimensional (MDS)
-
 Se opto por utilizar MDS ya que el objetivo no es clasificar ni predecir, sino EXPLORAR Y VISUALIZAR la estructura de similitud/disimilitud entre clientes (o entre segmentos de clientes) descrita por variables numericas ya estandarizadas.Cmdscale() toma una matriz de distancias euclidianas y produce una configuracion en pocas dimensiones, para mantener de
 la mejor manera posible esas distancias originales, permitiendo un mapa interpretable.
 
@@ -354,11 +352,11 @@ En conjunto, el MDS sugiere que la fuga de clientes no es un fenómeno aislado d
 
 # Resultados
 
-### K-means vs. PAM
+## K-means vs. PAM
 
 Tanto K-means como PAM encontraron una estructura de 3 grupos en los datos, lo cual respalda el número de clusters elegido con el método del codo. Sin embargo, el tamaño de los grupos difiere entre ambas técnicas: K-means produjo grupos relativamente balanceados (3,196 / 3,559 / 3,245 clientes), mientras que PAM concentró casi la mitad de los clientes en un solo grupo (4,799 / 2,153 / 3,048). Esta diferencia es consistente con la naturaleza de cada algoritmo: K-means minimiza la distancia a un centroide promedio, lo que tiende a repartir las observaciones de forma más uniforme, mientras que PAM identifica medioides reales, ajustándose más a la densidad natural de los datos y por tanto más robusto frente a los valores atípicos detectados en Age y NumOfProducts.
 
-### MDS
+## MDS
 
 El escalamiento multidimensional aportó una perspectiva complementaria: en vez de agrupar clientes individuales como K-means y PAM, permitió visualizar la relación entre segmentos definidos por país, género y fuga. El mapa mostró dos patrones claros: la Dimensión 2 separa consistentemente a los segmentos que se fugaron de los que no, sin importar el país o género, y la Dimensión 1 separa a Germany del resto de países. Esto confirma, desde un ángulo distinto al de K-means y PAM, que la fuga está asociada a un perfil financiero identificable, y añade que el país de origen es una segunda fuente de variabilidad relevante que las otras dos técnicas no capturaron directamente.
 
@@ -366,7 +364,8 @@ El escalamiento multidimensional aportó una perspectiva complementaria: en vez 
 En conjunto, las tres técnicas convergen en una misma conclusión desde ángulos distintos: existe una segmentación real de los clientes bancarios, y esa segmentación está relacionada con la fuga. K-means y PAM coinciden en el número de grupos, aunque difieren en cómo los reparten; el MDS, por su parte, confirma que la separación entre clientes que se fugan y los que no es sistemática, y agrega el país como un factor adicional de diferenciación no evidente en el clustering directo.
 
 # Discusión
-```{r}
+
+```{r validacion-exited}
 # Tabla cruzada: grupo de K-means vs. si el cliente se fue del banco
 tabla_validacion <- table(Grupo = modelo_km$cluster, Exited = exited)
 tabla_validacion
@@ -375,12 +374,7 @@ tabla_validacion
 round(prop.table(tabla_validacion, margin = 1) * 100, 1)
 ```
 
-
 Al cruzar los grupos de K-means con la variable real de fuga (Exited), se observa que el Grupo 2 presenta la tasa de abandono más baja (14.4%), mientras que los Grupos 1 y 3 rondan el doble (23.2% y 24.2% respectivamente). Esto es notable porque el Grupo 2 es el que menos balance tiene en cuenta, pero el que más productos contratados tiene con el banco. Esto sugiere que la cantidad de productos contratados está más relacionada con la retención del cliente que el balance de cuenta o la antigüedad: un cliente con varios productos bancarios (tarjeta, préstamo, cuenta de ahorro, etc.) tiene más razones para quedarse, incluso si no mantiene mucho dinero guardado. Los grupos con menos productos —independientemente de si son clientes nuevos o de toda la vida— muestran un riesgo de fuga similar entre sí.
-
-```{r validacion-exited}
-
-```
 
 # Conclusiones
 

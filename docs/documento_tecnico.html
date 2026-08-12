@@ -2170,10 +2170,6 @@ dimensión.</p>
 <div id="escalamiento-multidimensional-mds" class="section level2" number="4.3">
 <h2><span class="header-section-number">4.3</span> Escalamiento
 multidimensional (MDS)</h2>
-</div>
-<div id="escalamiento-multidimensional-mds-1" class="section level2" number="4.4">
-<h2><span class="header-section-number">4.4</span> Escalamiento
-multidimensional (MDS)</h2>
 <p>Se opto por utilizar MDS ya que el objetivo no es clasificar ni
 predecir, sino EXPLORAR Y VISUALIZAR la estructura de
 similitud/disimilitud entre clientes (o entre segmentos de clientes)
@@ -2358,9 +2354,8 @@ fuga.</p>
 </div>
 <div id="resultados" class="section level1" number="5">
 <h1><span class="header-section-number">5</span> Resultados</h1>
-<div id="k-means-vs.-pam" class="section level3" number="5.0.1">
-<h3><span class="header-section-number">5.0.1</span> K-means
-vs. PAM</h3>
+<div id="k-means-vs.-pam" class="section level2" number="5.1">
+<h2><span class="header-section-number">5.1</span> K-means vs. PAM</h2>
 <p>Tanto K-means como PAM encontraron una estructura de 3 grupos en los
 datos, lo cual respalda el número de clusters elegido con el método del
 codo. Sin embargo, el tamaño de los grupos difiere entre ambas técnicas:
@@ -2373,8 +2368,8 @@ más uniforme, mientras que PAM identifica medioides reales, ajustándose
 más a la densidad natural de los datos y por tanto más robusto frente a
 los valores atípicos detectados en Age y NumOfProducts.</p>
 </div>
-<div id="mds" class="section level3" number="5.0.2">
-<h3><span class="header-section-number">5.0.2</span> MDS</h3>
+<div id="mds" class="section level2" number="5.2">
+<h2><span class="header-section-number">5.2</span> MDS</h2>
 <p>El escalamiento multidimensional aportó una perspectiva
 complementaria: en vez de agrupar clientes individuales como K-means y
 PAM, permitió visualizar la relación entre segmentos definidos por país,
@@ -2412,7 +2407,7 @@ round(prop.table(tabla_validacion, margin = 1) * 100, 1)</code></pre>
 ##     1 76.8 23.2
 ##     2 85.6 14.4
 ##     3 75.8 24.2</code></pre>
-<p>“Al cruzar los grupos de K-means con la variable real de fuga
+<p>Al cruzar los grupos de K-means con la variable real de fuga
 (Exited), se observa que el Grupo 2 presenta la tasa de abandono más
 baja (14.4%), mientras que los Grupos 1 y 3 rondan el doble (23.2% y
 24.2% respectivamente). Esto es notable porque el Grupo 2 es el que
@@ -2423,11 +2418,11 @@ balance de cuenta o la antigüedad: un cliente con varios productos
 bancarios (tarjeta, préstamo, cuenta de ahorro, etc.) tiene más razones
 para quedarse, incluso si no mantiene mucho dinero guardado. Los grupos
 con menos productos —independientemente de si son clientes nuevos o de
-toda la vida— muestran un riesgo de fuga similar entre sí.”</p>
+toda la vida— muestran un riesgo de fuga similar entre sí.</p>
 </div>
 <div id="conclusiones" class="section level1" number="7">
 <h1><span class="header-section-number">7</span> Conclusiones</h1>
-<p>“El análisis confirmó que sí existen grupos naturales de clientes
+<p>El análisis confirmó que sí existen grupos naturales de clientes
 según su perfil financiero, identificados de forma consistente por
 K-means y PAM en tres perfiles: clientes con buen balance y pocos
 productos (nuevos o antiguos), y clientes con balance casi en cero pero
