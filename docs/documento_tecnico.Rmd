@@ -37,9 +37,13 @@ El objetivo es doble: primero, identificar y caracterizar esos perfiles de clien
 - **Fuente:** [Bank Customer Churn Dataset](https://www.kaggle.com/datasets/shrutimechlearn/churn-modelling), disponible públicamente en Kaggle.
 - **Tamaño original:** 10,000 observaciones (clientes), 14 variables.
 
-Las variables originales son: `RowNumber`, `CustomerId`, `Surname` (identificadores, sin valor analítico), `CreditScore` (puntaje crediticio), `Geography` (país), `Gender`, `Age`, `Tenure` (años como cliente del banco), `Balance` (saldo en cuenta), `NumOfProducts` (productos bancarios contratados), `HasCrCard`, `IsActiveMember`, `EstimatedSalary` y `Exited` (si el cliente abandonó el banco; no se usa para el agrupamiento, se reserva para la validación final).
+Las variables originales son: RowNumber, CustomerId, Surname (identificadores, sin valor analítico), CreditScore (puntaje crediticio), Geography (país de residencia), Gender (género), Age (edad), Tenure (años como cliente del banco), Balance (saldo en cuenta), NumOfProducts (cantidad de productos bancarios contratados), HasCrCard (si el cliente tiene tarjeta de crédito o no), IsActiveMember (si el cliente es miembro activo del banco), EstimatedSalary (salario anual estimado) y Exited (si el cliente abandonó el banco; no se usa para el agrupamiento, se reserva para la validación final).
+
+Dado que la mayoría de las variables relevantes para el análisis son numéricas (puntaje crediticio, edad, antigüedad, balance, número de productos y salario), este proyecto aplica tres técnicas de agrupamiento: K-means, K-medoids (PAM) y escalamiento multidimensional (MDS).
 
 ## Preparación del entorno
+
+Antes de trabajar con los datos, se cargan las librerías de R necesarias para el análisis: tidyverse para la manipulación general de datos, cluster para aplicar la técnica de K-medoids (PAM), factoextra para visualizar los agrupamientos, y GGally para explorar las relaciones entre variables.
 
 ```{r paquetes}
 # install.packages(c("tidyverse", "cluster", "factoextra", "GGally"))
@@ -75,7 +79,11 @@ De los 10,000 clientes, la mitad son de Francia (50.1%), y el resto se reparte e
 
 # Exploración y preparación de los datos
 
+En esta sección se revisa la calidad de los datos, se realiza la limpieza necesaria, se exploran las distribuciones de las variables y se preparan los datos para aplicar las técnicas de agrupamiento.
+
 ## Calidad de los datos
+
+Antes de cualquier análisis, es importante verificar que los datos no tengan duplicados ni valores faltantes, ya que esto podría afectar los resultados.
 
 ```{r calidad-datos}
 sum(duplicated(datos))    
@@ -85,6 +93,8 @@ colSums(is.na(datos))
 No se encontraron filas duplicadas ni valores faltantes en ninguna columna, así que no hubo que imputar nada.
 
 ## Limpieza
+
+Con los datos ya revisados, se procede a eliminar las variables que no aportan información útil para el análisis.
 
 ```{r limpieza}
 # RowNumber, CustomerId y Surname son identificadores que no describen
@@ -197,6 +207,8 @@ ggpairs(vars_cluster)
 Interpretación: El gráfico ggpairs() muestra, en la diagonal, la forma de cada variable por separado, y en los paneles de abajo, la relación entre cada par de variables. Se confirma que la mayoría de las relaciones son dispersas, sin un patrón claro, lo cual coincide con las correlaciones bajas calculadas antes. La relación más visible es entre Balance y NumOfProducts, donde se nota que los clientes con más productos tienden a tener menos balance en cuenta, aunque tampoco es una relación muy fuerte.
 
 ## Escalado
+
+Como último paso antes de aplicar las técnicas de agrupamiento, se escalan las variables seleccionadas para que todas tengan el mismo peso en el cálculo de distancias.
 
 ```{r escalado}
 datos_esc <- scale(vars_cluster)
