@@ -397,20 +397,43 @@ text(mds$points[,1], mds$points[,2],
 
 abline(h = 0, v = 0, col = "gray80", lty = 2)  # líneas de referencia opcionales
 ```
+
 El mapa MDS confirma, desde una perspectiva geométrica, la estructura de tres perfiles identificada por K-means. La Dimensión 1 separa claramente al Grupo 2 de los Grupos 1 y 3 , lo cual coincide con la variable que más distingue a ese grupo: balance de cuenta casi en cero pero mayor cantidad de productos contratados. La Dimensión 2, por su parte, separa al Grupo 1 del Grupo 3, reflejando la diferencia en antigüedad entre ambos: el Grupo 1 son clientes de larga data (~7.6 años en promedio) y el Grupo 3 son clientes recientes (~2.3 años).
 
 Lo que hace que se observe un patrón interesante: el Grupo 2, que es el que más se aleja de los otros dos en la Dimensión 1, es también el que tiene una tasa de fuga notablemente menor (14.4%) frente a 23.2% y 24.2% en los Grupos 1 y 3. En cambio, la separación en la Dimensión 2 —que distingue clientes antiguos de nuevos— no se traduce en una diferencia relevante en la tasa de fuga entre esos dos grupos (23.2% vs. 24.2%, prácticamente iguales). Esto sugiere que la dimensión que más importa para la retención es la asociada al balance y la cantidad de productos (Dimensión 1), y no la asociada a la antigüedad del cliente (Dimensión 2), un hallazgo importante. 
+
 # Resultados
 
 ## K-means vs. PAM
 
-Tanto K-means como PAM encontraron una estructura de 3 grupos en los datos, lo cual respalda el número de clusters elegido con el método del codo. Sin embargo, el tamaño de los grupos difiere entre ambas técnicas: K-means produjo grupos relativamente balanceados (3,196 / 3,559 / 3,245 clientes), mientras que PAM concentró casi la mitad de los clientes en un solo grupo (4,799 / 2,153 / 3,048). Esta diferencia es consistente con la naturaleza de cada algoritmo: K-means minimiza la distancia a un centroide promedio, lo que tiende a repartir las observaciones de forma más uniforme, mientras que PAM identifica medioides reales, ajustándose más a la densidad natural de los datos y por tanto más robusto frente a los valores atípicos detectados en Age y NumOfProducts.
+Tanto K-means como PAM permitieron dividir a los clientes en tres grupos, utilizando las mismas seis variables numéricas: puntaje crediticio, edad, antigüedad, balance, número de productos y salario estimado. Esto permite comparar cómo cada técnica organiza a los clientes.
+
+K-means produjo tres grupos de tamaño relativamente similar: el Grupo 1 tiene 3,196 clientes, el Grupo 2 tiene 3,559 y el Grupo 3 tiene 3,245. En cambio, PAM produjo grupos de tamaños más diferentes: 4,799 clientes en el Grupo 1, 2,153 en el Grupo 2 y 3,048 en el Grupo 3. Esta diferencia muestra que, aunque ambos métodos utilizan tres grupos, no necesariamente asignan a los clientes de la misma manera.
+
+En K-means, los grupos se diferenciaron principalmente por el balance, la cantidad de productos y la antigüedad del cliente. El Grupo 1 está formado principalmente por clientes con varios años en el banco, buen balance y pocos productos. El Grupo 2 presenta un balance cercano a cero, pero es el grupo con mayor cantidad de productos contratados. El Grupo 3 reúne clientes con menor antigüedad, buen balance y pocos productos.
+
+
+Por su parte, PAM encontró los siguientes perfiles promedio:
+
+| Grupo PAM | Clientes | CreditScore | Edad | Tenure | Balance | Productos | Salario estimado |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| 1 | 4,799 | 649.16 | 40.22 | 4.96 | 104,404.61 | 1.00 | 100,774.00 |
+| 2 | 2,153 | 653.31 | 38.84 | 4.98 | 121,332.17 | 2.12 | 102,576.92 |
+| 3 | 3,048 | 650.72 | 36.93 | 5.11 | 850.73 | 1.95 | 97,257.17 |
+
+
+
+El Grupo 1 de PAM es el más grande y se caracteriza por tener, en promedio, un solo producto y un balance superior a 100,000. El Grupo 2 es el más pequeño y presenta el balance promedio más alto, además de tener poco más de dos productos por cliente. El Grupo 3 presenta un balance promedio cercano a cero y alrededor de dos productos por cliente. Estos resultados muestran que PAM también encuentra diferencias relacionadas principalmente con el balance y el número de productos, aunque distribuye los clientes de una manera diferente a K-means.
 
 ## MDS
 
-El escalamiento multidimensional aportó una perspectiva complementaria: en vez de agrupar clientes individuales como K-means y PAM, permitió visualizar geométricamente las distancias entre los tres perfiles que K-means ya había encontrado. El mapa mostró que la Dimensión 1, asociada principalmente al balance de cuenta y la cantidad de productos contratados, separa claramente al Grupo 2 de los Grupos 1 y 3, mientras que la Dimensión 2, asociada a la antigüedad del cliente, separa al Grupo 1 (clientes antiguos) del Grupo 3 (clientes nuevos). Al cruzar esta configuración con la tasa de fuga real, se observó que la separación en la Dimensión 1 coincide con una diferencia notable en la fuga (14.4% en el Grupo 2 frente a 23-24% en los otros dos), mientras que la separación en la Dimensión 2 no se traduce en diferencias relevantes de fuga entre clientes antiguos y nuevos. Esto confirma, desde un ángulo distinto al de K-means y PAM, que la variable que más distingue a los grupos en el espacio (balance y productos) es también la que más se relaciona con la retención.
+El MDS permitió visualizar las distancias entre los tres perfiles encontrados por K-means. El resultado mostró una separación clara del Grupo 2 respecto a los Grupos 1 y 3 en la primera dimensión. Esta diferencia coincide con las características del Grupo 2, principalmente su balance cercano a cero y su mayor cantidad de productos contratados.
 
-En conjunto, las tres técnicas convergen en una misma conclusión desde ángulos distintos: existe una segmentación real de los clientes bancarios, y esa segmentación está relacionada con la fuga. K-means y PAM coinciden en el número de grupos, aunque difieren en cómo los reparten; el MDS, por su parte, confirma visualmente que la dimensión asociada al balance y la cantidad de productos es la que mejor diferencia a los clientes en términos de riesgo de fuga, por encima de la antigüedad — reforzando la recomendación práctica de enfocar la retención en el número de productos contratados más que en el tiempo que el cliente lleva en el banco.
+La segunda dimensión separó principalmente al Grupo 1 del Grupo 3. Esta diferencia está relacionada con la antigüedad: el Grupo 1 representa clientes con mayor tiempo en el banco, mientras que el Grupo 3 representa clientes más recientes.
+
+Al comparar estos resultados con la tasa real de fuga, se observa que el Grupo 2 presenta la menor tasa de abandono, con un 14.4%, mientras que el Grupo 1 presenta un 23.2% y el Grupo 3 un 24.2%. Esto permite observar que la diferencia entre clientes antiguos y nuevos no representa una diferencia importante en la fuga, mientras que el grupo que se diferencia por su balance y cantidad de productos sí presenta una tasa de abandono menor.
+
+En conjunto, los resultados muestran que las técnicas permiten identificar diferentes perfiles de clientes y que algunas de las características que distinguen estos perfiles también presentan diferencias en las tasas de abandono.
 
 # Discusión
 
@@ -423,8 +446,32 @@ tabla_validacion
 round(prop.table(tabla_validacion, margin = 1) * 100, 1)
 ```
 
-Al cruzar los grupos de K-means con la variable real de fuga (Exited), se observa que el Grupo 2 presenta la tasa de abandono más baja (14.4%), mientras que los Grupos 1 y 3 rondan el doble (23.2% y 24.2% respectivamente). Esto es notable porque el Grupo 2 es el que menos balance tiene en cuenta, pero el que más productos contratados tiene con el banco. Esto sugiere que la cantidad de productos contratados está más relacionada con la retención del cliente que el balance de cuenta o la antigüedad: un cliente con varios productos bancarios (tarjeta, préstamo, cuenta de ahorro, etc.) tiene más razones para quedarse, incluso si no mantiene mucho dinero guardado. Los grupos con menos productos —independientemente de si son clientes nuevos o de toda la vida— muestran un riesgo de fuga similar entre sí.
+Los resultados obtenidos muestran que es posible identificar diferentes perfiles de clientes a partir de sus características financieras y demográficas. Tanto K-means como PAM permitieron formar tres grupos, aunque la cantidad de clientes en cada grupo fue diferente. Esto muestra que los dos métodos pueden organizar a los clientes de distintas maneras, aun cuando utilizan las mismas variables y el mismo número de grupos.
+
+En el caso de K-means, las principales diferencias entre los grupos se relacionan con el balance, la cantidad de productos contratados y la antigüedad del cliente. El Grupo 2 resulta especialmente interesante porque presenta un balance cercano a cero y, al mismo tiempo, la mayor cantidad de productos contratados. Este grupo también presenta la menor tasa de fuga, con un 14.4%, mientras que los Grupos 1 y 3 presentan tasas de 23.2% y 24.2%. Esto muestra que existe una relación entre los perfiles encontrados y el abandono de los clientes.
+
+Sin embargo, no se puede afirmar que tener una mayor cantidad de productos sea la causa de que un cliente permanezca en el banco. El Grupo 2 no solamente se diferencia por la cantidad de productos, sino también por su balance, por lo que no es posible determinar con este análisis cuál de estas características tiene mayor influencia sobre la permanencia del cliente. Los resultados permiten observar una relación, pero no una causa directa.
+
+El análisis MDS ayudó a visualizar las diferencias entre los tres perfiles encontrados mediante K-means. La primera dimensión separó principalmente al Grupo 2 de los Grupos 1 y 3, mientras que la segunda dimensión mostró la diferencia relacionada con la antigüedad de los clientes. Al comparar estas diferencias con las tasas de fuga, se observa que los Grupos 1 y 3 tienen tasas muy similares, a pesar de que representan clientes con diferente antigüedad. Esto indica que, dentro de los grupos analizados, la antigüedad por sí sola no muestra una diferencia importante en el abandono.
+
+También es importante considerar que K-means y PAM no produjeron exactamente los mismos grupos. K-means generó grupos de tamaños relativamente similares, mientras que PAM concentró una mayor cantidad de clientes en uno de ellos. Esto no significa que uno de los métodos sea necesariamente correcto y el otro incorrecto, sino que cada técnica utiliza una forma diferente de encontrar los grupos. Además, PAM puede ser útil cuando existen valores que pueden afectar la formación de los grupos, como algunos valores extremos presentes en las variables analizadas.
+
+Finalmente, existen algunas limitaciones que deben tomarse en cuenta. El análisis se realizó utilizando únicamente seis variables numéricas, por lo que existen otras características del conjunto de datos que podrían aportar información sobre el abandono de los clientes. Además, aunque se encontraron diferencias en las tasas de fuga entre los grupos, el análisis no permite predecir directamente qué clientes van a abandonar el banco ni establecer relaciones de causa y efecto. El MDS, por su parte, se utilizó para visualizar las diferencias entre los perfiles encontrados por K-means y no como un método adicional para clasificar a los 10,000 clientes.
+
+En general, los resultados permiten comprender mejor los diferentes perfiles de clientes y muestran que algunas de sus características están relacionadas con diferentes niveles de abandono. Estos resultados pueden servir como punto de partida para realizar análisis posteriores que permitan estudiar con mayor profundidad los factores relacionados con la permanencia o abandono de los clientes.
+
+
 
 # Conclusiones
 
-El análisis confirmó que sí existen grupos naturales de clientes según su perfil financiero, identificados de forma consistente por K-means y PAM en tres perfiles: clientes con buen balance y pocos productos (nuevos o antiguos), y clientes con balance casi en cero pero más productos contratados. Estos grupos, encontrados sin usar la variable de fuga, sí se relacionan con el abandono real: el grupo con más productos contratados tiene la menor tasa de fuga (14.4%), frente a un 23-24% en los otros dos. Esto sugiere que la cantidad de productos bancarios que tiene un cliente es un mejor indicador de retención que su antigüedad o su balance en cuenta. El MDS aportó una capa adicional: geométricamente, confirmó que la dimensión asociada al balance y la cantidad de productos separa mejor a los clientes según su riesgo de fuga que la dimensión asociada a la antigüedad. Esto refuerza, desde un ángulo distinto, que el número de productos contratados es la variable clave para diferenciar el riesgo de abandono. Para el banco, esto tiene una implicación práctica directa: enfocar estrategias de retención en aumentar la cantidad de productos contratados por cliente, más que en el balance que mantienen en cuenta.
+El análisis realizado permitió identificar grupos naturales de clientes según sus características financieras y demográficas, utilizando las técnicas de K-means, PAM y MDS. K-means y PAM permitieron encontrar tres grupos de clientes, aunque cada técnica los distribuyó de manera diferente. K-means produjo grupos de tamaños relativamente similares, mientras que PAM concentró una mayor cantidad de clientes en uno de los grupos.
+
+Los resultados de K-means permitieron identificar tres perfiles principales. El Grupo 1 está formado principalmente por clientes con mayor antigüedad, buen balance y pocos productos contratados. El Grupo 2 se caracteriza por tener un balance cercano a cero, pero una mayor cantidad de productos contratados. El Grupo 3 reúne clientes con menor antigüedad, buen balance y pocos productos. Esto muestra que el balance, la cantidad de productos y la antigüedad son características que permiten diferenciar los perfiles encontrados.
+
+Al comparar estos grupos con la variable Exited, se encontró que el Grupo 2 presenta la menor tasa de fuga, con un 14.4%, mientras que los Grupos 1 y 3 presentan tasas de 23.2% y 24.2%, respectivamente. Por lo tanto, los grupos encontrados mediante un análisis que no utilizó la variable de fuga sí presentan diferencias en el abandono real de los clientes.
+
+Uno de los resultados más importantes es que el Grupo 2, que tiene la mayor cantidad de productos contratados, presenta también la menor tasa de fuga. Sin embargo, este grupo también se diferencia de los demás por tener un balance cercano a cero, por lo que no se puede afirmar que la cantidad de productos sea por sí sola la causa de que los clientes permanezcan en el banco. Los resultados muestran una relación entre estas características y la fuga, pero no permiten establecer una relación de causa y efecto.
+
+El MDS permitió visualizar las diferencias entre los tres perfiles encontrados por K-means. La primera dimensión separó principalmente al Grupo 2 de los Grupos 1 y 3, mientras que la segunda dimensión mostró la diferencia entre los clientes con mayor y menor antigüedad. Al comparar estas diferencias con las tasas de fuga, se observa que los Grupos 1 y 3 tienen tasas muy similares, a pesar de representar clientes con diferente antigüedad. Esto indica que, dentro de los grupos encontrados, la antigüedad por sí sola no parece explicar las diferencias observadas en la fuga.
+
+En conclusión, sí existen diferentes perfiles de clientes y estos perfiles presentan diferentes niveles de abandono. La cantidad de productos contratados aparece como una característica importante para diferenciar los grupos y se relaciona con una menor tasa de fuga en los datos analizados. Estos resultados pueden servir como punto de partida para que el banco estudie con mayor detalle las características de los clientes que permanecen y de aquellos que abandonan, pero sería necesario realizar análisis adicionales para determinar qué factores influyen directamente en la permanencia de los clientes.
