@@ -8,6 +8,7 @@ output:
     toc: true
     toc_float: true
     number_sections: true
+    theme: flatly
   pdf_document:
     toc: true
     number_sections: true
