@@ -118,7 +118,11 @@ hist(datos_limpios$Balance, main = "Distribución de balance de cuenta",
      xlab = "Balance", ylab = "Frecuencia",col = "#C55A11")
 ```
  
-Interpretación: El histograma muestra una barra muy alta en cero, correspondiente a los clientes sin balance en cuenta. El resto de los clientes se distribuye en una forma más parecida a una campana, entre los 50,000 y 200,000, sin otro pico marcado.
+```{r balance-cero}
+mean(datos_limpios$Balance == 0)
+```
+
+Interpretación: El histograma muestra una barra muy alta en cero: el 36.17% de los clientes tiene el balance de cuenta en cero, como se confirma con el cálculo anterior. El resto de los clientes se distribuye en una forma más parecida a una campana, entre los 50,000 y 200,000, sin otro pico marcado.
  
 ### Puntaje crediticio
  
@@ -149,11 +153,7 @@ boxplot(datos_limpios[, c("CreditScore", "Age", "Tenure")],
  
 Al comparar estas tres variables se observa que `Age` es la que más valores atípicos presenta, con varios puntos por encima del bigote superior. `CreditScore` y `Tenure` muestran cajas más compactas, con menos valores extremos visibles.
 
-```{r balance-cero}
-mean(datos_limpios$Balance == 0)
-```
-
-Algo que llama la atención es que el 36.17% de los clientes tiene el balance de cuenta en cero. Por eso el histograma de Balance se ve con dos picos: un montón de clientes en cero, y el resto repartido en valores más altos.
+### Detección de valores atípicos (regla del IQR)
 
 ```{r outliers-iqr}
 detectar_outliers <- function(x) {
@@ -170,8 +170,8 @@ vars_numericas <- datos_limpios %>%
 
 sapply(vars_numericas, detectar_outliers)
 ```
+Con la regla del IQR se detectaron valores atípicos en tres variables: Age (359 casos, cerca del 3.6% del total, la más relevante), NumOfProducts (60 casos) y CreditScore (15 casos). El resto de las variables (Tenure, Balance, EstimatedSalary) no presentó valores fuera de los límites del IQR. Esto es importante porque justifica usar PAM además de k-means más adelante: PAM aguanta mejor los valores extremos que k-means, especialmente considerando la cantidad de outliers en Age.
 
-Con la regla del IQR salieron 359 valores atípicos en `Age` (como un 3.6% del total) y 60 en `NumOfProducts`. Esto es importante porque justifica usar PAM además de k-means más adelante: PAM aguanta mejor los valores extremos que k-means.
 
 ## Selección de variables para el análisis
 
@@ -194,8 +194,7 @@ round(matriz_cor, 2)
 ```{r ggpairs, fig.width=8, fig.height=8}
 ggpairs(vars_cluster)
 ```
-
-Casi todas las correlaciones son bajas. La única un poco más marcada es entre `Balance` y `NumOfProducts` (r = -0.30). Como no hay correlaciones fuertes, no hizo falta quitar ninguna variable por estar repitiendo información.
+Interpretación: El gráfico ggpairs() muestra, en la diagonal, la forma de cada variable por separado, y en los paneles de abajo, la relación entre cada par de variables. Se confirma que la mayoría de las relaciones son dispersas, sin un patrón claro, lo cual coincide con las correlaciones bajas calculadas antes. La relación más visible es entre Balance y NumOfProducts, donde se nota que los clientes con más productos tienden a tener menos balance en cuenta, aunque tampoco es una relación muy fuerte.
 
 ## Escalado
 
@@ -207,6 +206,9 @@ round(apply(datos_esc, 2, sd), 2)
 ```
 
 Como las variables están en escalas muy distintas (por ejemplo `Balance` llega a valores de miles, mientras `Tenure` va de 0 a 10), hay que escalarlas antes de calcular distancias, igual que se hizo en clase con `clima_estaciones.csv`. Después de escalar, todas quedan con media 0 y desviación 1, como se confirma abajo.
+
+
+Con los datos limpios, seleccionados y escalados (objeto datos_esc), se procede a aplicar las tres técnicas de agrupamiento: K-means, K-medoids (PAM) y escalamiento multidimensional (MDS).
 
 ---
 
