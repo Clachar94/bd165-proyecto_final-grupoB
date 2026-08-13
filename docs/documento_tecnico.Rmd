@@ -55,6 +55,11 @@ datos <- read.csv("../data/Churn_Modelling.csv")
 str(datos)
 dim(datos)
 ```
+Primero se carga el archivo Churn_Modelling.csv en el objeto datos. Con la función str() se revisa la estructura interna del dataset: el tipo de cada variable (entero, texto o numérico) y algunos de sus primeros valores. Esto permite ver, por ejemplo, que Geography y Gender son variables de texto (categóricas), mientras que CreditScore, Age, Balance y las demás son numéricas.
+
+Con dim() se obtienen las dimensiones del dataset: 10,000 filas (una por cada cliente) y 14 columnas (una por cada variable)
+
+
 
 ## Contexto demográfico
 
@@ -90,24 +95,59 @@ datos_limpios <- datos %>%
 str(datos_limpios)
 ```
 
+Antes de explorar los datos, se eliminaron tres variables que no aportan información sobre el comportamiento del cliente: RowNumber (un simple número de fila), CustomerId (identificador interno del banco) y Surname (apellido del cliente). Estas variables son identificadores únicos de cada persona, no características de su perfil financiero, por lo que no sirven para encontrar patrones o agrupar clientes. Tras esta limpieza, el dataset queda con 10,000 observaciones y 11 variables, listo para explorar sus distribuciones y detectar posibles valores atípicos.
+
+
 ## Distribuciones y valores atípicos
 
-```{r distribuciones, fig.width=6, fig.height=4}
+A continuación se presentan algunos gráficos para explorar la forma en que se distribuyen las variables numéricas, y así identificar posibles valores atípicos antes de continuar con el análisis.
+
+### Edad
+ 
+```{r hist-edad, fig.width=6, fig.height=4}
 hist(datos_limpios$Age, main = "Distribución de edad",
-     xlab = "Edad", col = "#1F497D")
-
-hist(datos_limpios$Balance, main = "Distribución de balance de cuenta",
-     xlab = "Balance", col = "#C55A11")
-
-hist(datos_limpios$CreditScore, main = "Distribución de puntaje crediticio",
-     xlab = "CreditScore", col = "#38761D")
-
-hist(datos_limpios$EstimatedSalary, main = "Distribución de salario estimado",
-     xlab = "Salario estimado", col = "#7F6000")
-
-boxplot(datos_limpios[, c("CreditScore", "Age", "Tenure")],
-        main = "Boxplots de variables (escala original)")
+     xlab = "Edad", ylab = "Frecuencia", col = "#1F497D")
 ```
+ 
+Interpretación: La mayoría de los clientes se concentra entre los 30 y 40 años. La distribución tiene una cola hacia la derecha: hay clientes de edades mayores, pero cada vez menos frecuentes conforme aumenta la edad.
+ 
+### Balance de cuenta
+ 
+```{r hist-balance, fig.width=6, fig.height=4}
+hist(datos_limpios$Balance, main = "Distribución de balance de cuenta",
+     xlab = "Balance", ylab = "Frecuencia",col = "#C55A11")
+```
+ 
+Interpretación: El histograma muestra una barra muy alta en cero, correspondiente a los clientes sin balance en cuenta. El resto de los clientes se distribuye en una forma más parecida a una campana, entre los 50,000 y 200,000, sin otro pico marcado.
+ 
+### Puntaje crediticio
+ 
+```{r hist-creditscore, fig.width=6, fig.height=4}
+hist(datos_limpios$CreditScore, main = "Distribución de puntaje crediticio",
+     xlab = "CreditScore",ylab = "Frecuencia", col = "#38761D")
+```
+ 
+Interpretación: El puntaje crediticio se distribuye de forma bastante simétrica, con la mayor concentración de clientes en el rango medio, similar a una distribución normal.
+ 
+### Salario estimado
+ 
+```{r hist-salario, fig.width=6, fig.height=4}
+hist(datos_limpios$EstimatedSalary, main = "Distribución de salario estimado",
+     xlab = "Salario estimado",ylab = "Frecuencia", col = "#7F6000")
+```
+ 
+Interpretación: El salario estimado se reparte de forma bastante pareja a lo largo de todo su rango, sin un pico claro ni una concentración marcada en algún valor.
+ 
+### Boxplots comparativos
+ 
+```{r boxplot-comparativo, fig.width=6, fig.height=4}
+boxplot(datos_limpios[, c("CreditScore", "Age", "Tenure")],
+        main = "Boxplots de variables (escala original)",
+        ylab = "Valor",
+        col = c("#1F497D", "#C55A11", "#38761D"))
+```
+ 
+Al comparar estas tres variables se observa que `Age` es la que más valores atípicos presenta, con varios puntos por encima del bigote superior. `CreditScore` y `Tenure` muestran cajas más compactas, con menos valores extremos visibles.
 
 ```{r balance-cero}
 mean(datos_limpios$Balance == 0)
