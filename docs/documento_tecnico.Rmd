@@ -315,95 +315,91 @@ Cluster 1 (rojo): El más grande y disperso, ubicado hacia la izquierda. Agrupa 
 Cluster 2 (verde): Posicionado al centro. Hay traslape considerable con el rojo, lo que indica que estos clientes comparten características con ambos grupos vecinos.
 Cluster 3 (azul): Se desplaza claramente hacia la derecha en Dim1, lo que sugiere que este grupo se distingue de los demás principalmente en las variables que más peso tienen en esa dimensión.
 
+
 ## Escalamiento multidimensional (MDS)
 
-Se opto por utilizar MDS ya que el objetivo no es clasificar ni predecir, sino EXPLORAR Y VISUALIZAR la estructura de similitud/disimilitud entre clientes (o entre segmentos de clientes) descrita por variables numericas ya estandarizadas.Cmdscale() toma una matriz de distancias euclidianas y produce una configuracion en pocas dimensiones, para mantener de
-la mejor manera posible esas distancias originales, permitiendo un mapa interpretable.
+Se optó por utilizar MDS ya que el objetivo no es clasificar ni predecir, sino EXPLORAR Y
+VISUALIZAR la estructura de similitud/disimilitud entre los perfiles de cliente encontrados
+por K-means, descrita por variables numéricas ya estandarizadas. A diferencia del primer
+intento, aquí el mapa se construye únicamente con las variables de comportamiento
+(`CreditScore`, `Age`, `Tenure`, `Balance`, `NumOfProducts`, `EstimatedSalary`); la variable
+`Exited` no participa en el cálculo de distancias, se usa solo después para colorear el mapa
+y así mantener el análisis no supervisado, igual que en K-means y PAM.
 
-```{r}
+Cmdscale() toma una matriz de distancias euclidianas y produce una configuración en pocas
+dimensiones que conserva de la mejor manera posible esas distancias originales, permitiendo
+un mapa interpretable.
 
-datos_mds <- as.data.frame(datos_esc) #Se crea esto para poder llamar los datos_esc ya que estan en formato lista
-
-```
-
-```{r mds}
-datos_mds$Exited    <- datos$Exited
-datos_mds$Geography <- datos$Geography
-datos_mds$Gender    <- datos$Gender
-```
-
-
-```{r}
+```{r mds-perfiles}
 vars <- c("CreditScore","Age","Tenure","Balance","NumOfProducts","EstimatedSalary")
+
+# Perfil promedio de cada cluster de K-means, en variables ESCALADAS
+# (mismas unidades que se usaron para formar los clusters)
+
+perfiles_km <- aggregate(datos_esc[, vars],
+                          by = list(Grupo = modelo_km$cluster),
+                          FUN = mean)
+rownames(perfiles_km) <- paste("Grupo", perfiles_km$Grupo)
+
+perfiles_km
 ```
 
-Agrupamos por segmento (equivalente a "una fila por estacion)
+Matriz de distancias entre los 3 perfiles (número pequeño = perfiles parecidos, número
+grande = muy distintos):
 
-```{r}
-
-segmentos <- aggregate(datos_mds[, vars],
-                       by = list(Geography = datos_mds$Geography,
-                                 Gender    = datos_mds$Gender,
-                                 Exited    = datos_mds$Exited),
-                       FUN = mean)
-```
-Etiqueta legible para cada segmento (país, género y si se fue o no)
-
-```{r}
-segmentos$label <- paste0(
-  segmentos$Geography, " - ",
-  ifelse(segmentos$Gender == "Male", "Hombres", "Mujeres"), " - ",
-  ifelse(segmentos$Exited == 1, "Fuga", "No fuga")
-)
-rownames(segmentos) <- segmentos$label
+```{r mds-distancias}
+d <- dist(perfiles_km[, vars])
+d
 ```
 
-Matriz de distancias, aquilos numero pequeño = segmentos parecidos, numero grande = muy distintos
-
-
-```{r}
-d <- dist(segmentos[, vars])
-
-d 
+```{r mds-cmdscale}
+mds <- cmdscale(d, k = 2, eig = TRUE)
+mds$points
+round(mds$GOF, 3)  # goodness of fit: qué tan bien 2 dimensiones representan las distancias
 ```
 
-MDS 
+Como validación posterior (no usada para construir el mapa), calculamos la tasa de fuga real de cada grupo:
 
-```{r}
-mds <- cmdscale(d, k = 2)
-mds
-```
-Vector de color: por Exited (0 = no fuga, 1 = fuga)
-
-```{r}
-colores <- ifelse(segmentos$Exited == 1, "pink", "blue")
+```{r mds-tasa-fuga}
+tasa_fuga <- round(prop.table(table(Grupo = modelo_km$cluster, Exited = exited),
+                               margin = 1)[, "1"] * 100, 1)
+tasa_fuga
 ```
 
-Gráfica del mapa de segmentos de clientes
 
-```{r}
-plot(mds[,1],
-     mds[,2],
-     type = "n",
-     xlab = "Dimensión 1",
-     ylab = "Dimensión 2",
-     main = "Mapa MDS de segmentos de clientes")
+```{r mds-plot, fig.width=7, fig.height=6}
+# Márgenes de los ejes con padding extra para que quepan las etiquetas
+rango_x <- range(mds$points[,1])
+rango_y <- range(mds$points[,2])
+pad_x <- diff(rango_x) * 0.5
+pad_y <- diff(rango_y) * 0.3
 
-text(mds[,1],
-     mds[,2],
-     labels = rownames(segmentos),
-     col = colores,
-     cex = 0.8)
+colores_grupo <- c("#1F497D", "#C55A11", "#38761D")
 
+plot(mds$points[,1], mds$points[,2],
+     xlim = rango_x + c(-pad_x, pad_x),
+     ylim = rango_y + c(-pad_y, pad_y),
+     pch  = 19,
+     cex  = 2,
+     col  = colores_grupo,
+     xlab = "Dimensión 1", ylab = "Dimensión 2",
+     main = "Mapa MDS de los perfiles de K-means")
+
+etiquetas <- paste0(rownames(perfiles_km), "\n(", tasa_fuga, "% fuga)")
+
+text(mds$points[,1], mds$points[,2],
+     labels = etiquetas,
+     col    = colores_grupo,
+     pos    = 3,        # coloca el texto ARRIBA del punto, no encima
+     offset = 1,
+     cex    = 0.9,
+     font   = 2)
+
+abline(h = 0, v = 0, col = "gray80", lty = 2)  # líneas de referencia opcionales
 ```
+El mapa MDS confirma, desde una perspectiva geométrica, la estructura de tres perfiles identificada por K-means. La Dimensión 1 separa claramente al Grupo 2 de los Grupos 1 y 3 , lo cual coincide con la variable que más distingue a ese grupo: balance de cuenta casi en cero pero mayor cantidad de productos contratados. La Dimensión 2, por su parte, separa al Grupo 1 del Grupo 3, reflejando la diferencia en antigüedad entre ambos: el Grupo 1 son clientes de larga data (~7.6 años en promedio) y el Grupo 3 son clientes recientes (~2.3 años).
 
-El mapa MDS revela una estructura de dos ejes claramente diferenciados. La Dimensión 2 separa consistentemente a los segmentos que se fugaron de los que permanecieron: todos los segmentos "Fuga" se ubican en la mitad superior del plano y todos los "No fuga" en la mitad inferior, sin traslape entre ambos grupos. Esto confirma que el perfil promedio de un cliente que abandona el banco es sistemáticamente distinto al de uno que se queda, en términos de las variables analizadas (CreditScore, Age, Tenure, Balance, NumOfProducts, EstimatedSalary).
-
-Por su parte, la Dimensión 1 refleja principalmente diferencias geográficas: los clientes de Germany quedan aislados del resto (France y Spain), independientemente de si se fugaron o no, lo que indica que el país de origen también aporta una fuente importante de variabilidad al perfil del cliente, probablemente ligada al balance de cuenta, que tiende a ser considerablemente más alto en Germany dentro de este dataset.
-
-En conjunto, el MDS sugiere que la fuga de clientes no es un fenómeno aislado de un único país, sino un patrón que se repite de forma similar dentro de cada geografía (cada país tiene su propio "par" fuga/no-fuga separado verticalmente), y que Geography actúa como un segundo factor relevante de diferenciación entre clientes, independiente de la fuga.
-
-
+Lo que hace que se observe un patrón interesante: el Grupo 2, que es el que más se aleja de los otros dos en la Dimensión 1, es también el que tiene una tasa de fuga notablemente menor (14.4%) frente a 23.2% y 24.2% en los Grupos 1 y 3. En cambio, la separación en la Dimensión 2 —que distingue clientes antiguos de nuevos— no se traduce en una diferencia relevante en la tasa de fuga entre esos dos grupos (23.2% vs. 24.2%, prácticamente iguales). Esto sugiere que la dimensión que más importa para la retención es la asociada al balance y la cantidad de productos (Dimensión 1), y no la asociada a la antigüedad del cliente (Dimensión 2), un hallazgo importante. 
 # Resultados
 
 ## K-means vs. PAM
@@ -412,10 +408,9 @@ Tanto K-means como PAM encontraron una estructura de 3 grupos en los datos, lo c
 
 ## MDS
 
-El escalamiento multidimensional aportó una perspectiva complementaria: en vez de agrupar clientes individuales como K-means y PAM, permitió visualizar la relación entre segmentos definidos por país, género y fuga. El mapa mostró dos patrones claros: la Dimensión 2 separa consistentemente a los segmentos que se fugaron de los que no, sin importar el país o género, y la Dimensión 1 separa a Germany del resto de países. Esto confirma, desde un ángulo distinto al de K-means y PAM, que la fuga está asociada a un perfil financiero identificable, y añade que el país de origen es una segunda fuente de variabilidad relevante que las otras dos técnicas no capturaron directamente.
+El escalamiento multidimensional aportó una perspectiva complementaria: en vez de agrupar clientes individuales como K-means y PAM, permitió visualizar geométricamente las distancias entre los tres perfiles que K-means ya había encontrado. El mapa mostró que la Dimensión 1, asociada principalmente al balance de cuenta y la cantidad de productos contratados, separa claramente al Grupo 2 de los Grupos 1 y 3, mientras que la Dimensión 2, asociada a la antigüedad del cliente, separa al Grupo 1 (clientes antiguos) del Grupo 3 (clientes nuevos). Al cruzar esta configuración con la tasa de fuga real, se observó que la separación en la Dimensión 1 coincide con una diferencia notable en la fuga (14.4% en el Grupo 2 frente a 23-24% en los otros dos), mientras que la separación en la Dimensión 2 no se traduce en diferencias relevantes de fuga entre clientes antiguos y nuevos. Esto confirma, desde un ángulo distinto al de K-means y PAM, que la variable que más distingue a los grupos en el espacio (balance y productos) es también la que más se relaciona con la retención.
 
-
-En conjunto, las tres técnicas convergen en una misma conclusión desde ángulos distintos: existe una segmentación real de los clientes bancarios, y esa segmentación está relacionada con la fuga. K-means y PAM coinciden en el número de grupos, aunque difieren en cómo los reparten; el MDS, por su parte, confirma que la separación entre clientes que se fugan y los que no es sistemática, y agrega el país como un factor adicional de diferenciación no evidente en el clustering directo.
+En conjunto, las tres técnicas convergen en una misma conclusión desde ángulos distintos: existe una segmentación real de los clientes bancarios, y esa segmentación está relacionada con la fuga. K-means y PAM coinciden en el número de grupos, aunque difieren en cómo los reparten; el MDS, por su parte, confirma visualmente que la dimensión asociada al balance y la cantidad de productos es la que mejor diferencia a los clientes en términos de riesgo de fuga, por encima de la antigüedad — reforzando la recomendación práctica de enfocar la retención en el número de productos contratados más que en el tiempo que el cliente lleva en el banco.
 
 # Discusión
 
@@ -432,4 +427,4 @@ Al cruzar los grupos de K-means con la variable real de fuga (Exited), se observ
 
 # Conclusiones
 
-El análisis confirmó que sí existen grupos naturales de clientes según su perfil financiero, identificados de forma consistente por K-means y PAM en tres perfiles: clientes con buen balance y pocos productos (nuevos o antiguos), y clientes con balance casi en cero pero más productos contratados. Estos grupos, encontrados sin usar la variable de fuga, sí se relacionan con el abandono real: el grupo con más productos contratados tiene la menor tasa de fuga (14.4%), frente a un 23-24% en los otros dos. Esto sugiere que la cantidad de productos bancarios que tiene un cliente es un mejor indicador de retención que su antigüedad o su balance en cuenta. El MDS aportó una capa adicional: además del perfil financiero, el país de origen (particularmente Germany) también diferencia a los clientes, independientemente de la fuga. Para el banco, esto tiene una implicación práctica directa: enfocar estrategias de retención en aumentar la cantidad de productos contratados por cliente, más que en el balance que mantienen en cuenta
+El análisis confirmó que sí existen grupos naturales de clientes según su perfil financiero, identificados de forma consistente por K-means y PAM en tres perfiles: clientes con buen balance y pocos productos (nuevos o antiguos), y clientes con balance casi en cero pero más productos contratados. Estos grupos, encontrados sin usar la variable de fuga, sí se relacionan con el abandono real: el grupo con más productos contratados tiene la menor tasa de fuga (14.4%), frente a un 23-24% en los otros dos. Esto sugiere que la cantidad de productos bancarios que tiene un cliente es un mejor indicador de retención que su antigüedad o su balance en cuenta. El MDS aportó una capa adicional: geométricamente, confirmó que la dimensión asociada al balance y la cantidad de productos separa mejor a los clientes según su riesgo de fuga que la dimensión asociada a la antigüedad. Esto refuerza, desde un ángulo distinto, que el número de productos contratados es la variable clave para diferenciar el riesgo de abandono. Para el banco, esto tiene una implicación práctica directa: enfocar estrategias de retención en aumentar la cantidad de productos contratados por cliente, más que en el balance que mantienen en cuenta.
